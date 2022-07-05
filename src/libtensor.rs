@@ -1,9 +1,5 @@
-
-/// Var = struct
-/// 
-
-
-
+// TODO: create a macro tensofr!([4,3,2,1,3])
+use std::convert::From;
 
 #[derive(Debug)]
 struct Var<F> 
@@ -27,25 +23,28 @@ impl<F> Var<F> where F: Fn(f64) -> f64 {
 }
 
 trait Gradient<T> {
-    fn grad(&self) -> T;
+    fn grad(tensor: T) -> T;
 }
 
-struct Tensor<T, F>
-where
-    F: Gradient<T>
-{
-    val: T,
-    grad_fn: Option<F>,
-    grad: f64,
-}
-
+/// ```
+/// let x = Tensor::<Array>::from([4,1,3]);
+/// assert_eq!(x.grad, Tensor.val([1,1,1]));
+/// 
+/// let y = Tensor::<List>::from([4,1,3]);
+/// let z = x + y
+/// 
+/// ```
+/// 
 /// grad is also type `<T>`, since val is semantically
 /// viewed as the resulting computation, hence why the default of grad_fn is also 
 /// the identity function
 /// 
 /// For part of the implementation of the tensor we keep
 /// in mind that it as a function evaluated for some value.
-struct Tensor2<T, F>
+/// 
+
+
+struct Tensor<T, F>
 where
     F: Gradient<T>
 {
@@ -55,12 +54,13 @@ where
 }
 
 ///
-/// L = [x, y] * [z, w] + [x, x]
+/// L = [x, y] * [z, w] 
 /// ElementWiseMul
-/// d L/dx = d L/dL * d L/dq(x) * d q(x)/dx
+/// d L/dx = dL/dL * d L/dx = [z, 0]
+///  
 
-impl<T, F> Tensor2<T, F> where F: Gradient<T> {
 
+impl<T, F> Tensor<T, F> where F: Gradient<T> {
     fn new(val: T, grad_fn: F, grad: T) -> Self {
         Self {
             val,
@@ -70,57 +70,48 @@ impl<T, F> Tensor2<T, F> where F: Gradient<T> {
     }
 }
 
-impl<T, F> Default for Tensor2<T,F> where F: Gradient<T> + Default, T: Default {
-    fn default() -> Self{
+
+impl<T, const N: usize> From<T> for Tensor<[T; N], Identity> where T: Default + Unit<T> + Copy {
+    fn from(array: [T;N]) -> Self {
+       Self {
+       val: array,
+       grad_fn: Identity,
+       grad: [T::default(); N]
+        }
+    }
+}
+
+impl<T> Default for Tensor<T, Identity> where T: Default + Unit<T>, Identity: Gradient<T> {
+    fn default() -> Self {
         Self {
            val: T::default(),
-           grad_fn: F::default(),
+           grad_fn: Identity,
            grad: T::default(), 
         }
     } 
 }
 
-struct IdentityFunction;
+struct Identity;
 
-trait Identity<T> {
-
+trait Unit<U> {
+    fn unit() -> U;
 }
 
-impl<T> Gradient<T> for IdentityFunction{
-    fn grad(&self) -> T {
-        T::identity()
+impl Unit<f64> for f64 {
+    fn unit() -> f64 {
+        1
     }
 }
 
-fn identity() -> f64 {
-    1.
+impl<T, const N: usize> Unit<[T; N]> for [T; N] where T: Unit<T> {
+    fn unit() -> [T; N] {
+        [T::unit(); N]
+    }
 }
 
-// perhaps we have an id for 
-// looking up the derivative of a var with
-// respect to antoher var
-// returns -> Option<f64> where we get None
-// when the id does not exist
-
-trait Derivative {
-    fn diff(&self) -> f64;
-}
-
-// the graph can be a list of length N
-// for nn
-
-
-// idx icr from function
-#[derive(Debug)]
-struct Test<'a> {
-    c: Option<&'a mut Self>
-}
-
-impl<'a> Test<'a> {
-    fn new(c: Option<&'a mut Self>) -> Self {
-        Self{
-            c
-        }
+impl<T, const N: usize> Gradient<[T; N]> for Identity where T: Unit<T> {
+    fn grad(tensor: [T; N]) -> [T; N] {
+       tensor.unit()
     }
 }
 
@@ -128,20 +119,15 @@ impl<'a> Test<'a> {
 mod tests {
 
     use super::*;
-    
+
     #[test]
-    fn create_var() {
-
-        let var= Var::new(3.0, vec![|x: f64| -> f64 {x}], 3.0);
-        dbg!(var.grad_fn[0](4.0)); 
-
+    fn tensor_from_array() {
+        let x = Tensor::from([3,2,1]);
     }
 
     #[test]
-    fn create_test() {
-        let mut test = Test::new(None);
-        let test2 = Test::new(Some(&mut test));
-        dbg!(test2.c);
-
+    fn identity_gradient() {
+        let x = tensor!([3,2,1]);
+        assert_eq!(x.grad, tensor!([1,1,1]))
     }
 }
