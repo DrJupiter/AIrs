@@ -39,6 +39,12 @@ where
     grad: f64,
 }
 
+/// grad is also type `<T>`, since val is semantically
+/// viewed as the resulting computation, hence why the default of grad_fn is also 
+/// the identity function
+/// 
+/// For part of the implementation of the tensor we keep
+/// in mind that it as a function evaluated for some value.
 struct Tensor2<T, F>
 where
     F: Gradient<T>
@@ -47,6 +53,11 @@ where
     grad_fn: F,
     grad: T,
 }
+
+///
+/// L = [x, y] * [z, w] + [x, x]
+/// ElementWiseMul
+/// d L/dx = d L/dL * d L/dq(x) * d q(x)/dx
 
 impl<T, F> Tensor2<T, F> where F: Gradient<T> {
 
