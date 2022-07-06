@@ -1,5 +1,6 @@
 // TODO: create a macro tensofr!([4,3,2,1,3])
-use std::convert::{From, Into};
+use std::convert::{From};
+use std::iter::FromIterator;
 
 #[derive(Debug)]
 struct Var<F> 
@@ -78,6 +79,19 @@ impl<T, const N: usize> From<[T; N]> for Tensor<[T; N], Identity> where T: Defau
        grad_fn: Identity,
        grad: [T::default(); N]
         }
+    }
+}
+
+impl<T> FromIterator<T> for Tensor<Vec<T>, Identity> where T: Unit<T> + Default, Identity: Gradient<T> {
+    fn from_iter<T: IntoIterator<Item = T>>(iter: T) -> Self {
+        let mut val: Vec<T> = Vec::new();
+        let mut grad: Vec<T> = Vec::new(); 
+
+        for i in iter {
+            val.push(i);
+            grad.push(T::default());
+        }
+        Self { val, grad_fn: Identity, grad }
     }
 }
 
