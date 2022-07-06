@@ -1,31 +1,7 @@
 // TODO: create a macro tensofr!([4,3,2,1,3])
 use std::convert::{From};
 use std::iter::FromIterator;
-
-#[derive(Debug)]
-struct Var<F> 
-where
-    //F: Fn(f64) -> f64
-    F: Fn(f64) -> f64
-{
-    val: f64,
-    grad_fn: Vec<F>, // const N based on parents 
-    grad: f64,
-}
-
-impl<F> Var<F> where F: Fn(f64) -> f64 {
-    fn new(val: f64, grad_fn: Vec<F>, grad: f64) -> Self {
-        Self {
-            val,
-            grad_fn,
-            grad
-        }
-    }
-}
-
-trait Gradient<T> {
-    fn grad(tensor: T) -> T;
-}
+use crate::libmap::{Gradient, Identity, Unit};
 
 /// ```
 /// let x = Tensor::<Array>::from([4,1,3]);
@@ -71,19 +47,8 @@ impl<T, F> Tensor<T, F> where F: Gradient<T> {
     }
 }
 
-
-impl<T, const N: usize> From<[T; N]> for Tensor<[T; N], Identity> where T: Default + Unit<T> + Copy {
-    fn from(array: [T;N]) -> Self {
-       Self {
-       val: array,
-       grad_fn: Identity,
-       grad: [T::default(); N]
-        }
-    }
-}
-
-impl<T> FromIterator<T> for Tensor<Vec<T>, Identity> where T: Unit<T> + Default, Identity: Gradient<T> {
-    fn from_iter<T: IntoIterator<Item = T>>(iter: T) -> Self {
+impl<T> FromIterator<T> for Tensor<Vec<T>, Identity> where T: Unit<T> + Default + Copy, Identity: Gradient<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut val: Vec<T> = Vec::new();
         let mut grad: Vec<T> = Vec::new(); 
 
@@ -105,30 +70,7 @@ impl<T> Default for Tensor<T, Identity> where T: Default + Unit<T>, Identity: Gr
     } 
 }
 
-#[derive(Debug)]
-struct Identity;
 
-trait Unit<U> {
-    fn unit() -> U;
-}
-
-impl Unit<f64> for f64 {
-    fn unit() -> f64 {
-        1f64
-    }
-}
-
-impl<T, const N: usize> Unit<[T; N]> for [T; N] where T: Unit<T> + Copy {
-    fn unit() -> [T; N] {
-        [T::unit(); N]
-    }
-}
-
-impl<T, const N: usize> Gradient<[T; N]> for Identity where T: Unit<T> + Copy {
-    fn grad(_tensor: [T; N]) -> [T; N] {
-       <[T;N]>::unit()
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -137,8 +79,8 @@ mod tests {
 
     #[test]
     fn tensor_from_array() {
-        let x = Tensor::from([3.,2.,1.]);
-        dbg!(x);
+        let x: Tensor<Vec<f64>, Identity> = Tensor::from_iter([3.,2.,1.].into_iter());
+//        dbg!(x);
     }
 
     #[test]
