@@ -1,5 +1,5 @@
 // TODO: create a macro tensofr!([4,3,2,1,3])
-use std::convert::From;
+use std::convert::{From, Into};
 
 #[derive(Debug)]
 struct Var<F> 
@@ -43,7 +43,7 @@ trait Gradient<T> {
 /// in mind that it as a function evaluated for some value.
 /// 
 
-
+#[derive(Debug, Copy, Clone)]
 struct Tensor<T, F>
 where
     F: Gradient<T>
@@ -71,7 +71,7 @@ impl<T, F> Tensor<T, F> where F: Gradient<T> {
 }
 
 
-impl<T, const N: usize> From<T> for Tensor<[T; N], Identity> where T: Default + Unit<T> + Copy {
+impl<T, const N: usize> From<[T; N]> for Tensor<[T; N], Identity> where T: Default + Unit<T> + Copy {
     fn from(array: [T;N]) -> Self {
        Self {
        val: array,
@@ -91,6 +91,7 @@ impl<T> Default for Tensor<T, Identity> where T: Default + Unit<T>, Identity: Gr
     } 
 }
 
+#[derive(Debug)]
 struct Identity;
 
 trait Unit<U> {
@@ -99,19 +100,19 @@ trait Unit<U> {
 
 impl Unit<f64> for f64 {
     fn unit() -> f64 {
-        1
+        1f64
     }
 }
 
-impl<T, const N: usize> Unit<[T; N]> for [T; N] where T: Unit<T> {
+impl<T, const N: usize> Unit<[T; N]> for [T; N] where T: Unit<T> + Copy {
     fn unit() -> [T; N] {
         [T::unit(); N]
     }
 }
 
-impl<T, const N: usize> Gradient<[T; N]> for Identity where T: Unit<T> {
-    fn grad(tensor: [T; N]) -> [T; N] {
-       tensor.unit()
+impl<T, const N: usize> Gradient<[T; N]> for Identity where T: Unit<T> + Copy {
+    fn grad(_tensor: [T; N]) -> [T; N] {
+       <[T;N]>::unit()
     }
 }
 
@@ -122,12 +123,14 @@ mod tests {
 
     #[test]
     fn tensor_from_array() {
-        let x = Tensor::from([3,2,1]);
+        let x = Tensor::from([3.,2.,1.]);
+        dbg!(x);
     }
 
     #[test]
     fn identity_gradient() {
-        let x = tensor!([3,2,1]);
-        assert_eq!(x.grad, tensor!([1,1,1]))
+        panic!("Not implemented")
+        //let x = tensor!([3,2,1]);
+        //assert_eq!(x.grad, tensor!([1,1,1]))
     }
 }
