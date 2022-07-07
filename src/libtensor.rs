@@ -45,6 +45,8 @@ impl<T, F> Tensor<T, F> where F: Gradient<T> {
             grad
         }
     }
+
+    // what we want is backwards, but first POC
 }
 
 impl<T> FromIterator<T> for Tensor<Vec<T>, Identity> where T: Unit<T> + Default + Copy, Identity: Gradient<T> {
@@ -79,8 +81,8 @@ mod tests {
 
     #[test]
     fn tensor_from_array() {
-        let x: Tensor<Vec<f64>, Identity> = Tensor::from_iter([3.,2.,1.].into_iter());
-//        dbg!(x);
+        let x = Tensor::from_iter([3.,2.,1.].into_iter());
+        dbg!(Identity::grad(x.val));
     }
 
     #[test]
