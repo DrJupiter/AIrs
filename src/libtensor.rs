@@ -1,7 +1,8 @@
 // TODO: create a macro tensofr!([4,3,2,1,3])
 use std::convert::{From};
 use std::iter::FromIterator;
-use crate::libmap::{Gradient, Identity, Unit};
+use std::ops::{Add, Mul, Div, Sub, Neg};
+use crate::libmap::{Gradient, Identity, ElementWiseMul, Unit};
 
 /// ```
 /// let x = Tensor::<Array>::from([4,1,3]);
@@ -32,12 +33,15 @@ where
 
 ///
 /// L = [x, y] * [z, w] 
+/// B = L + [c,b] = C
+/// B/dx = B/L * L/x + B/C * C/x
 /// ElementWiseMul
 /// d L/dx = dL/dL * d L/dx = [z, 0]
 ///  
 
 
 impl<T, F> Tensor<T, F> where F: Gradient<T> {
+
     fn new(val: T, grad_fn: F, grad: T) -> Self {
         Self {
             val,
@@ -45,8 +49,11 @@ impl<T, F> Tensor<T, F> where F: Gradient<T> {
             grad
         }
     }
+    
+}
 
-    // what we want is backwards, but first POC
+impl<'a, T, F> Mul for Tensor<T, F> where F: Gradient<T> {
+    type Output = Tensor<T, ElementWiseMul<'a, T, F>>;
 }
 
 impl<T> FromIterator<T> for Tensor<Vec<T>, Identity> where T: Unit<T> + Default + Copy, Identity: Gradient<T> {
@@ -58,6 +65,7 @@ impl<T> FromIterator<T> for Tensor<Vec<T>, Identity> where T: Unit<T> + Default 
             val.push(i);
             grad.push(T::default());
         }
+
         Self { val, grad_fn: Identity, grad }
     }
 }
@@ -83,6 +91,7 @@ mod tests {
     fn tensor_from_array() {
         let x = Tensor::from_iter([3.,2.,1.].into_iter());
         dbg!(Identity::grad(x.val));
+        dbg!(x);
     }
 
     #[test]

@@ -7,6 +7,18 @@ pub trait Gradient<T> {
 #[derive(Debug)]
 pub struct Identity;
 
+#[derive(Debug)]
+pub struct ElementWiseMul<'a, T, F>{
+    factor_1: &'a T,
+    factor_2: &'a F,
+}
+
+impl<'a, T, F> Gradient<T> for ElementWiseMul<'a, T, F> {
+    fn grad(tensor: T) -> T {
+       tensor 
+    }
+}
+
 /* 
 impl<T, const N: usize> Gradient<[T; N]> for Identity where T: Unit<T> + Copy {
     fn grad(_tensor: [T; N]) -> [T; N] {
